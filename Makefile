@@ -1,7 +1,9 @@
-all: test
+PROGRAMS := ipconv lookup
 
-test: ipconv.c
+all: $(PROGRAMS)
+
+%: %.c
 	gcc -Wall $< -o $@
 
 clean:
-	rm -f test
+	rm -f $(PROGRAMS) *~
