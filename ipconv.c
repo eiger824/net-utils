@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <regex.h>
+#include <stdlib.h>
+#include <time.h>
 #include <stdint.h>
 #include <string.h>
 
-int is_valid_ip(char* ip)
+int is_valid_input(char* ip)
 {
     int regres;
     regex_t regex;
@@ -45,17 +47,19 @@ int is_valid_ip(char* ip)
     return 0;
 }
 
-uint32_t ip_to_numeric(char* ip)
+uint32_t ipaddr_2_bits(char* ip)
 {
     char* token;
-    uint32_t current = 0;;
+    char orig[1024];
     uint32_t out = 0;
 
     if (!ip)
         return 0;
 
+    strcpy(orig, ip);
+
     // First token
-    token = strtok(ip, ".");
+    token = strtok(orig, ".");
     out |= ((uint32_t)atoi(token) << 24);
     // Second token
     token = strtok(NULL, ".");
@@ -70,39 +74,75 @@ uint32_t ip_to_numeric(char* ip)
     return out;
 }
 
-int number_to_ip(uint32_t number, char* out)
+int bits_2_ipaddr(uint32_t ipaddr_bits, char *ip)
 {
-    if (!out)
+    uint8_t first = ipaddr_bits >> 24;
+    uint8_t second = ipaddr_bits >> 16;
+    uint8_t third = ipaddr_bits >> 8;
+    uint8_t last = ipaddr_bits;
+
+    if (!ip)
         return 1;
 
-    //TODO: implement
+    sprintf(ip, "%d.%d.%d.%d", first, second, third, last);
+    strcat(ip, "\0");
+
     return 0;
+}
+
+void enter_test()
+{
+    srand(time(NULL));
+    int i,j,k,l,m;
+    char ip[1024];
+    uint32_t num;
+    char res[1024];
+    for (i = 0; i < 100; ++i)
+    {
+        j = rand() % 255;
+        k = rand() % 255;
+        l = rand() % 255;
+        m = rand() % 255;
+        sprintf(ip, "%d.%d.%d.%d", j, k, l, m);
+        // Got a random IP => convert it and back
+        num = ipaddr_2_bits(ip);
+        bits_2_ipaddr(num, res);
+            // Print result
+        if (strcmp(ip, res) == 0)
+            printf("%-20s => 0x%-20x => %s\n", ip, num, res);
+        else
+            fprintf(stderr, "Wrong conversion!!!\n");
+    }
 }
 
 int main(int argc, char* argv[])
 {
     char ip[32];
+    char result[1024];
     uint32_t nip;
 
     if (argc == 1)
     {
-        printf("Enter ip/range: ");
-        scanf("%s", ip);
+        // Run test mode
+        enter_test();
     }
     else
     {
         strcpy(ip, argv[1]);
-    }
-    
-    if (is_valid_ip(ip) != 0)
-    {
-        fprintf(stderr, "Wrong format\n");
-        return 1;
-    }
+        if (is_valid_input(ip) != 0)
+        {
+            fprintf(stderr, "Wrong format\n");
+            return 1;
+        }
 
-    nip = ip_to_numeric(ip);
+        nip = ipaddr_2_bits(ip);
 
-    printf("Numeric: %u (%#x)\n", nip, nip);
+        printf("Numeric: %u (%#x)\n", nip, nip);
+
+        bits_2_ipaddr(nip, result);
+
+        printf("Conversion: %s\n", result);
+    }
 
     return 0;
 }
