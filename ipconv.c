@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <string.h>
+#include <arpa/inet.h>
 
 int is_valid_input(char* ip)
 {
@@ -90,6 +91,27 @@ int bits_2_ipaddr(uint32_t ipaddr_bits, char *ip)
     return 0;
 }
 
+int ipaddr_2_bits_v2(char* ip)
+{
+    if (!ip)
+        return 1;
+
+    in_addr_t addr = inet_addr(ip);
+    return addr;
+}
+
+int bits_2_ipaddr_v2(uint32_t ipaddr_bits, char *ip)
+{
+    if (!ip)
+        return 1;
+
+    struct in_addr in;
+    in.s_addr = ipaddr_bits;
+    strcpy(ip , inet_ntoa(in));
+
+    return 0;
+}
+
 void enter_test()
 {
     srand(time(NULL));
@@ -115,16 +137,57 @@ void enter_test()
     }
 }
 
+void ipaddr_2_bin(uint32_t b, char* bits)
+{
+    if (!bits)
+        return;
+    int c;
+    memset(bits, 0, 64);
+    for (c = 31; c >= 0; c--)
+    {
+        if (c % 8 == 7 && c < 31) strcat(bits, "-");
+        if ((b >> c) & 1)
+            strcat(bits, "1");
+        else
+            strcat(bits, "0");
+    }
+}
+
+void enter_test_v2()
+{
+    srand(time(NULL));
+    int i,j,k,l,m;
+    char ip[1024];
+    uint32_t num;
+    char res[1024];
+    for (i = 0; i < 100; ++i)
+    {
+        j = rand() % 255;
+        k = rand() % 255;
+        l = rand() % 255;
+        m = rand() % 255;
+        sprintf(ip, "%d.%d.%d.%d", j, k, l, m);
+        // Got a random IP => convert it and back
+        num = ipaddr_2_bits_v2(ip);
+        bits_2_ipaddr_v2(num, res);
+            // Print result
+        if (strcmp(ip, res) == 0)
+            printf("%-20s => 0x%-20x => %s\n", ip, num, res);
+        else
+            fprintf(stderr, "Wrong conversion!!!\n");
+    }
+}
+
 int main(int argc, char* argv[])
 {
     char ip[32];
-    char result[1024];
-    uint32_t nip;
+    char result[32], result2[32], bitarr[64];
+    uint32_t nip2, nip;
 
     if (argc == 1)
     {
         // Run test mode
-        enter_test();
+        enter_test_v2();
     }
     else
     {
@@ -136,12 +199,19 @@ int main(int argc, char* argv[])
         }
 
         nip = ipaddr_2_bits(ip);
+        nip2 = ipaddr_2_bits_v2(ip);
 
-        printf("Numeric: %u (%#x)\n", nip, nip);
+        ipaddr_2_bin(nip, bitarr);
+        printf("Numeric:      %-11u (%#x) [%s]\n", nip, nip, bitarr);
+
+        ipaddr_2_bin(nip2, bitarr);
+        printf("Numeric (v2): %-11u (%#x) [%s]\n", nip2, nip2, bitarr);
 
         bits_2_ipaddr(nip, result);
+        bits_2_ipaddr_v2(nip2, result2);
 
         printf("Conversion: %s\n", result);
+        printf("Conversion: %s\n", result2);
     }
 
     return 0;
